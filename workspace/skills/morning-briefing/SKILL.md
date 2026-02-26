@@ -41,7 +41,8 @@ except:
 
 if [ "$TOKEN" != "SKIP" ]; then
   TODAY=$(date -u +%Y-%m-%dT00:00:00Z)
-  TOMORROW=$(date -u -d "+1 day" +%Y-%m-%dT00:00:00Z 2>/dev/null || date -u -v+1d +%Y-%m-%dT00:00:00Z)
+  # Compatible date arithmetic
+  TOMORROW=$(python3 -c "from datetime import datetime, timedelta; print((datetime.utcnow() + timedelta(days=1)).strftime('%Y-%m-%dT00:00:00Z'))")
   curl -s -H "Authorization: Bearer $TOKEN" \
     "https://www.googleapis.com/calendar/v3/calendars/${GOOGLE_CALENDAR_ID:-primary}/events?timeMin=$TODAY&timeMax=$TOMORROW&singleEvents=true&orderBy=startTime" \
     | jq -r '.items[] | "• \(.start.dateTime // .start.date) — \(.summary)"'

@@ -34,6 +34,9 @@
     },
     "cron": {
       "exec_timeout_minutes": 3
+    },
+    "exec": {
+      "enable_deny_patterns": false
     }
   },
   "heartbeat": {
