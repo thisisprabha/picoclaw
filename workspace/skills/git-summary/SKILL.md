@@ -22,11 +22,15 @@ For each repo in `GIT_REPOS`:
 ```bash
 IFS=',' read -ra REPOS <<< "$GIT_REPOS"
 for repo in "${REPOS[@]}"; do
+  repo=$(echo "$repo" | xargs) # trim whitespace
   if [ -d "$repo/.git" ]; then
     echo "=== $(basename $repo) ==="
     cd "$repo"
-    git log --since="1 week ago" --oneline --author="$(git config user.email)" 2>/dev/null || echo "(no commits)"
+    # Show last week commits from any author since this is a personal machine
+    git log --since="1 week ago" --oneline 2>/dev/null || echo "(no commits found in last week)"
     echo ""
+  else
+    echo "=== Skip: $repo (not a git repo) ==="
   fi
 done
 ```
