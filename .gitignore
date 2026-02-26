@@ -9,6 +9,7 @@ build/
 *.test
 *.out
 /picoclaw
+/workspace
 /picoclaw-test
 cmd/**/workspace
 
