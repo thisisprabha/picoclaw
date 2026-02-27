@@ -36,15 +36,15 @@ fi
 ### List today's tasks
 
 ```bash
-curl -s "https://api.todoist.com/rest/v2/tasks?filter=today" \
+curl -s "https://api.todoist.com/api/v1/tasks?filter=today" \
   -H "Authorization: Bearer $TODOIST_API_TOKEN" \
-  | jq -r '.[] | "☐ [\(.id)] \(.content) (p\(.priority))"'
+  | jq -r 'if type=="object" and has("results") then .results[] else .[] end | "☐ [\(.id)] \(.content) (p\(.priority // 1))"'
 ```
 
 ### Create a task
 
 ```bash
-curl -s -X POST "https://api.todoist.com/rest/v2/tasks" \
+curl -s -X POST "https://api.todoist.com/api/v1/tasks" \
   -H "Authorization: Bearer $TODOIST_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"content": "<TASK_CONTENT>", "due_string": "<DUE_DATE_OR_today>"}'
@@ -59,7 +59,7 @@ Parse the user's message to extract:
 First find the task ID by listing tasks and matching by content, then:
 
 ```bash
-curl -s -X POST "https://api.todoist.com/rest/v2/tasks/<TASK_ID>/close" \
+curl -s -X POST "https://api.todoist.com/api/v1/tasks/<TASK_ID>/close" \
   -H "Authorization: Bearer $TODOIST_API_TOKEN"
 ```
 

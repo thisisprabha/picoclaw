@@ -54,9 +54,9 @@ If Google Calendar is not configured, skip and note "Calendar not configured."
 ### 3. Todoist (today's tasks)
 
 ```bash
-curl -s "https://api.todoist.com/rest/v2/tasks?filter=today" \
+curl -s "https://api.todoist.com/api/v1/tasks?filter=today" \
   -H "Authorization: Bearer $TODOIST_API_TOKEN" \
-  | jq -r '.[] | "☐ \(.content) (p\(.priority))"'
+  | jq -r 'if type=="object" and has("results") then .results[] else .[] end | "☐ \(.content) (p\(.priority // 1))"'
 ```
 
 If `TODOIST_API_TOKEN` is not set, skip and note "Todoist not configured."

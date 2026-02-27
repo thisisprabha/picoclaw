@@ -23,7 +23,12 @@ Best triggered weekly (Monday mornings) via heartbeat or cron.
 Use this Python script to fetch the last 7 days of emails:
 
 ```bash
-python3 -c "
+if [ -z "${EMAIL_IMAP_HOST:-}" ] || [ -z "${EMAIL_ADDRESS:-}" ] || [ -z "${EMAIL_PASSWORD:-}" ]; then
+  echo "Missing EMAIL_IMAP_HOST / EMAIL_ADDRESS / EMAIL_PASSWORD in env"
+  exit 0
+fi
+
+python3 - <<'PY'
 import imaplib, email, os
 from email.header import decode_header
 from datetime import datetime, timedelta
@@ -67,7 +72,7 @@ for mid in ids:
 
 mail.logout()
 print('\n---\n'.join(summaries) if summaries else 'No new emails in the last 7 days.')
-"
+PY
 ```
 
 If auth fails, guide the user to regenerate an app password and update `EMAIL_PASSWORD`.
