@@ -446,6 +446,46 @@ func TestConcurrentBuildSystemPromptWithCache(t *testing.T) {
 	}
 }
 
+func TestBuildMessages_InjectsRequestedSkillContent(t *testing.T) {
+	tmpDir := setupWorkspace(t, map[string]string{
+		"skills/todoist-manager/SKILL.md": "---\nname: todoist-manager\ndescription: test\n---\n# Todoist Skill\nUse env token.",
+	})
+	defer os.RemoveAll(tmpDir)
+
+	cb := NewContextBuilder(tmpDir)
+	msgs := cb.BuildMessages(nil, "", "Run todoist-manager skill now", nil, "cli", "direct")
+
+	if len(msgs) == 0 || msgs[0].Role != "system" {
+		t.Fatalf("expected first message to be system, got: %+v", msgs)
+	}
+
+	system := msgs[0].Content
+	if !strings.Contains(system, "# Requested Skills") {
+		t.Fatal("expected requested skills block in system prompt")
+	}
+	if !strings.Contains(system, "### Skill: todoist-manager") {
+		t.Fatal("expected inlined todoist-manager skill content")
+	}
+}
+
+func TestBuildMessages_NoRequestedSkill_NoInjection(t *testing.T) {
+	tmpDir := setupWorkspace(t, map[string]string{
+		"skills/todoist-manager/SKILL.md": "---\nname: todoist-manager\ndescription: test\n---\n# Todoist Skill",
+	})
+	defer os.RemoveAll(tmpDir)
+
+	cb := NewContextBuilder(tmpDir)
+	msgs := cb.BuildMessages(nil, "", "hello there", nil, "cli", "direct")
+
+	if len(msgs) == 0 || msgs[0].Role != "system" {
+		t.Fatalf("expected first message to be system, got: %+v", msgs)
+	}
+
+	if strings.Contains(msgs[0].Content, "# Requested Skills") {
+		t.Fatal("did not expect requested skills block for unrelated message")
+	}
+}
+
 // BenchmarkBuildMessagesWithCache measures caching performance.
 
 // TestEmptyWorkspaceBaselineDetectsNewFiles verifies that when the cache is

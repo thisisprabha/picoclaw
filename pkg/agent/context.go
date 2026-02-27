@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -375,6 +376,86 @@ func (cb *ContextBuilder) buildDynamicContext(channel, chatID string) string {
 	return sb.String()
 }
 
+func (cb *ContextBuilder) extractRequestedSkills(currentMessage string) []string {
+	msg := strings.ToLower(strings.TrimSpace(currentMessage))
+	if msg == "" {
+		return nil
+	}
+
+	type match struct {
+		name  string
+		index int
+	}
+
+	matches := make([]match, 0)
+	seen := map[string]bool{}
+
+	for _, info := range cb.skillsLoader.ListSkills() {
+		name := strings.TrimSpace(info.Name)
+		if name == "" {
+			continue
+		}
+
+		lowerName := strings.ToLower(name)
+		variants := []string{
+			lowerName,
+			strings.ReplaceAll(lowerName, "-", " "),
+			strings.ReplaceAll(lowerName, "-", ""),
+		}
+
+		best := -1
+		for _, variant := range variants {
+			if variant == "" {
+				continue
+			}
+			if idx := strings.Index(msg, variant); idx >= 0 && (best == -1 || idx < best) {
+				best = idx
+			}
+		}
+
+		if best >= 0 && !seen[name] {
+			matches = append(matches, match{name: name, index: best})
+			seen[name] = true
+		}
+	}
+
+	sort.SliceStable(matches, func(i, j int) bool {
+		if matches[i].index == matches[j].index {
+			return matches[i].name < matches[j].name
+		}
+		return matches[i].index < matches[j].index
+	})
+
+	out := make([]string, 0, len(matches))
+	for _, m := range matches {
+		out = append(out, m.name)
+	}
+	return out
+}
+
+func (cb *ContextBuilder) buildRequestedSkillsContext(currentMessage string) string {
+	requested := cb.extractRequestedSkills(currentMessage)
+	if len(requested) == 0 {
+		return ""
+	}
+
+	skillText := cb.skillsLoader.LoadSkillsForContext(requested)
+	if strings.TrimSpace(skillText) == "" {
+		return ""
+	}
+
+	return fmt.Sprintf(`# Requested Skills
+
+The user explicitly referenced these skill(s): %s
+
+You MUST:
+1. Read each skill's SKILL.md instructions first (or use the inlined copy below).
+2. Execute commands using runtime environment variables; never use placeholder secrets.
+3. Follow the skill workflow exactly before trying generic alternatives.
+
+%s`, strings.Join(requested, ", "), skillText)
+}
+
 func (cb *ContextBuilder) BuildMessages(
 	history []providers.Message,
 	summary string,
@@ -412,6 +493,11 @@ func (cb *ContextBuilder) BuildMessages(
 	contentBlocks := []providers.ContentBlock{
 		{Type: "text", Text: staticPrompt, CacheControl: &providers.CacheControl{Type: "ephemeral"}},
 		{Type: "text", Text: dynamicCtx},
+	}
+
+	if requestedSkillsText := cb.buildRequestedSkillsContext(currentMessage); requestedSkillsText != "" {
+		stringParts = append(stringParts, requestedSkillsText)
+		contentBlocks = append(contentBlocks, providers.ContentBlock{Type: "text", Text: requestedSkillsText})
 	}
 
 	if summary != "" {
