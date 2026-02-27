@@ -70,6 +70,9 @@ var defaultDenyPatterns = []*regexp.Regexp{
 }
 
 var bearerEnvHeaderSingleQuotePattern = regexp.MustCompile(`'Authorization:\s*Bearer\s*\$[A-Za-z_][A-Za-z0-9_]*'`)
+var protectedEnvOverridePattern = regexp.MustCompile(
+	`(?m)(^|[;\n])\s*(?:export\s+)?(?:GIT_REPOS|TODOIST_API_TOKEN|EMAIL_[A-Za-z0-9_]+)\s*=\s*[^;\n]+;?`,
+)
 
 func NewExecTool(workingDir string, restrict bool) *ExecTool {
 	return NewExecToolWithConfig(workingDir, restrict, nil)
@@ -141,6 +144,7 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]any) *ToolResult
 	if !ok {
 		return ErrorResult("command is required")
 	}
+	command = stripProtectedEnvOverrides(command)
 	command = normalizeBearerEnvHeaderQuotes(command)
 
 	cwd := t.workingDir
@@ -266,6 +270,17 @@ func normalizeBearerEnvHeaderQuotes(command string) string {
 		inner := strings.TrimPrefix(strings.TrimSuffix(segment, "'"), "'")
 		return `"` + inner + `"`
 	})
+}
+
+func stripProtectedEnvOverrides(command string) string {
+	cleaned := protectedEnvOverridePattern.ReplaceAllString(command, "$1")
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = strings.TrimLeft(cleaned, ";")
+	cleaned = strings.TrimSpace(cleaned)
+	if cleaned == "" {
+		return command
+	}
+	return cleaned
 }
 
 func (t *ExecTool) guardCommand(command, cwd string) string {

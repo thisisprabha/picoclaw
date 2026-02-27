@@ -293,3 +293,24 @@ func TestShellTool_RewritesSingleQuotedBearerEnvHeader(t *testing.T) {
 		t.Fatalf("expected token expansion after quote normalization, got: %s", result.ForLLM)
 	}
 }
+
+func TestShellTool_StripsProtectedEnvOverrides(t *testing.T) {
+	tool := NewExecTool("", false)
+
+	prev := os.Getenv("GIT_REPOS")
+	_ = os.Setenv("GIT_REPOS", "from-runtime-env")
+	defer func() {
+		_ = os.Setenv("GIT_REPOS", prev)
+	}()
+
+	result := tool.Execute(context.Background(), map[string]any{
+		"command": "export GIT_REPOS=bad-value; echo \"$GIT_REPOS\"",
+	})
+
+	if result.IsError {
+		t.Fatalf("expected command to succeed, got error: %s", result.ForLLM)
+	}
+	if !strings.Contains(result.ForLLM, "from-runtime-env") {
+		t.Fatalf("expected runtime env value, got: %s", result.ForLLM)
+	}
+}
