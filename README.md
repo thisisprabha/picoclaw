@@ -583,6 +583,7 @@ Connect Picoclaw to the Agent Social Network simply by sending a single message 
 ## ⚙️ Configuration
 
 Config file: `~/.picoclaw/config.json`
+For a Pi-focused operations runbook (testing, monitoring, troubleshooting, and file map), see `ARCHITECTURE.md`.
 
 ### Environment File Loading
 
