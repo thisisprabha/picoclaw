@@ -146,6 +146,7 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]any) *ToolResult
 	}
 	command = stripProtectedEnvOverrides(command)
 	command = normalizeBearerEnvHeaderQuotes(command)
+	command = normalizeLegacyGitSummaryCommand(command)
 
 	cwd := t.workingDir
 	if wd, ok := args["working_dir"].(string); ok && wd != "" {
@@ -281,6 +282,63 @@ func stripProtectedEnvOverrides(command string) string {
 		return command
 	}
 	return cleaned
+}
+
+func normalizeLegacyGitSummaryCommand(command string) string {
+	lower := strings.ToLower(command)
+	if !strings.Contains(lower, "git_repos") {
+		return command
+	}
+	if !strings.Contains(lower, `git log --since="1 week ago"`) {
+		return command
+	}
+	// If command already supports remote GitHub mode, keep it.
+	if strings.Contains(lower, "gh api") || strings.Contains(lower, "owner/repo") {
+		return command
+	}
+
+	// Canonical hybrid mode: local git repos + GitHub owner/repo references.
+	return `if [ -z "${GIT_REPOS:-}" ]; then
+  echo "GIT_REPOS is not set. Example: export GIT_REPOS=/home/user/repo1,/home/user/repo2 or owner/repo entries"
+  exit 0
+fi
+
+SINCE_ISO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
+if [ -z "$SINCE_ISO" ]; then
+  SINCE_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+fi
+
+printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
+  repo=$(echo "$repo" | xargs)
+  [ -z "$repo" ] && continue
+
+  if [ -d "$repo/.git" ]; then
+    echo "=== $(basename "$repo") ==="
+    (cd "$repo" && git log --since="1 week ago" --oneline 2>/dev/null) || echo "(no commits found in last week)"
+    echo ""
+    continue
+  fi
+
+  if printf '%s' "$repo" | grep -Eq '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'; then
+    echo "=== $repo ==="
+    if ! command -v gh >/dev/null 2>&1; then
+      echo "(skip: gh CLI not installed)"
+      echo ""
+      continue
+    fi
+    if ! gh auth status >/dev/null 2>&1; then
+      echo "(skip: gh not authenticated. Run: gh auth login -h github.com -p ssh -w)"
+      echo ""
+      continue
+    fi
+    gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100" 2>/dev/null \
+      | jq -r 'if type=="array" then (if length==0 then "(no commits found in last week)" else .[] | (.sha[0:7] + " " + (.commit.message | split("\n")[0])) end) else "(failed to query GitHub API)" end'
+    echo ""
+    continue
+  fi
+
+  echo "=== Skip: $repo (neither local git path nor owner/repo) ==="
+done`
 }
 
 func (t *ExecTool) guardCommand(command, cwd string) string {

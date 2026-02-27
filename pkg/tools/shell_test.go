@@ -314,3 +314,29 @@ func TestShellTool_StripsProtectedEnvOverrides(t *testing.T) {
 		t.Fatalf("expected runtime env value, got: %s", result.ForLLM)
 	}
 }
+
+func TestNormalizeLegacyGitSummaryCommand_RewritesToHybridMode(t *testing.T) {
+	legacy := `printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
+  repo=$(echo "$repo" | xargs)
+  [ -z "$repo" ] && continue
+  if [ -d "$repo/.git" ]; then
+    cd "$repo"
+    git log --since="1 week ago" --oneline 2>/dev/null || echo "(no commits found in last week)"
+  else
+    echo "=== Skip: $repo (not a git repo) ==="
+  fi
+done`
+
+	got := normalizeLegacyGitSummaryCommand(legacy)
+	if !strings.Contains(got, `gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100"`) {
+		t.Fatalf("expected rewritten hybrid git-summary command, got: %s", got)
+	}
+}
+
+func TestNormalizeLegacyGitSummaryCommand_LeavesModernCommand(t *testing.T) {
+	modern := `gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100"`
+	got := normalizeLegacyGitSummaryCommand(modern)
+	if got != modern {
+		t.Fatalf("expected modern command unchanged")
+	}
+}
