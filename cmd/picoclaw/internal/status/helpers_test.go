@@ -72,3 +72,33 @@ func TestBuildSkillsEnvHealthReport_NoTrackedSkills(t *testing.T) {
 	require.Contains(t, report, "Tracked skills found: none in workspace/skills")
 	require.False(t, strings.Contains(report, "Required env vars:"))
 }
+
+func TestBuildSkillsEnvHealthReport_GitRemoteRefsRequireGh(t *testing.T) {
+	workspace := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(workspace, "skills", "git-summary"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(workspace, "skills", "git-summary", "SKILL.md"), []byte("# test"), 0o644))
+
+	cfg := config.DefaultConfig()
+	cfg.Agents.Defaults.Workspace = workspace
+
+	report := buildSkillsEnvHealthReport(
+		cfg,
+		nil,
+		func(file string) (string, error) {
+			switch file {
+			case "git", "curl", "jq", "python3":
+				return "/usr/bin/" + file, nil
+			default:
+				return "", errors.New("missing")
+			}
+		},
+		func(key string) (string, bool) {
+			if key == "GIT_REPOS" {
+				return "thisisprabha/time-left,thisisprabha/networth", true
+			}
+			return "", false
+		},
+	)
+
+	require.Contains(t, report, "gh: missing")
+}

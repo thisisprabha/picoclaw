@@ -187,3 +187,15 @@ func TestFindGitReposOutsideWorkspace(t *testing.T) {
 	got := FindGitReposOutsideWorkspace(workspace, inside+","+outside+","+inside)
 	require.Equal(t, []string{outside}, got)
 }
+
+func TestFindGitReposOutsideWorkspace_IgnoresGitHubRepoRefs(t *testing.T) {
+	workspace := t.TempDir()
+	inside := filepath.Join(workspace, "repo-inside")
+	outside := filepath.Join(t.TempDir(), "repo-outside")
+
+	got := FindGitReposOutsideWorkspace(
+		workspace,
+		"thisisprabha/time-left,"+inside+",thisisprabha/networth,"+outside,
+	)
+	require.Equal(t, []string{outside}, got)
+}

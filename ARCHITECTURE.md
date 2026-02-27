@@ -157,11 +157,13 @@ for r in $(echo "$GIT_REPOS" | tr ',' ' '); do [ -d "$r/.git" ] && echo "OK $r" 
 ```
 
 Expected:
-- At least one repo shows `OK ...`.
+- For local-path mode: at least one repo shows `OK ...`.
+- For remote mode (`owner/repo` values): ensure `gh auth status` is successful.
 - Agent returns weekly commit summary.
 
 If failing:
-- `BAD` repos: replace `owner/repo` entries with absolute local paths.
+- If using local-path mode, `BAD` repos mean invalid local paths.
+- If using remote mode, run `gh auth status` and ensure repos are accessible.
 - Safety error (`outside working dir`): set `PICOCLAW_AGENTS_DEFAULTS_RESTRICT_TO_WORKSPACE=false` in env and restart service.
 
 ### Direct API/env checks

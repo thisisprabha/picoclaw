@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/sipeed/picoclaw/cmd/picoclaw/internal"
@@ -23,7 +24,8 @@ var (
 		"todoist-manager": {"TODOIST_API_TOKEN"},
 		"git-summary":     {"GIT_REPOS"},
 	}
-	requiredBins = []string{"git", "curl", "jq", "python3"}
+	baseRequiredBins = []string{"git", "curl", "jq", "python3"}
+	remoteRepoRefRE  = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 )
 
 func statusCmd() {
@@ -150,6 +152,7 @@ func buildSkillsEnvHealthReport(
 	}
 
 	requiredVars := requiredVarsForInstalledSkills(installedSkills)
+	gitRepos, _ := lookupEnv("GIT_REPOS")
 	if len(requiredVars) > 0 {
 		b.WriteString("Required env vars:\n")
 		for _, key := range requiredVars {
@@ -160,13 +163,12 @@ func buildSkillsEnvHealthReport(
 	}
 
 	b.WriteString("Required binaries:\n")
-	for _, bin := range requiredBins {
+	for _, bin := range requiredBinsForInstalledSkills(installedSkills, gitRepos) {
 		_, err := lookupPath(bin)
 		fmt.Fprintf(&b, "  - %s: %s\n", bin, statusMarker(err == nil))
 	}
 
 	if cfg.Agents.Defaults.RestrictToWorkspace {
-		gitRepos, _ := lookupEnv("GIT_REPOS")
 		outside := internal.FindGitReposOutsideWorkspace(cfg.WorkspacePath(), gitRepos)
 		if len(outside) > 0 {
 			fmt.Fprintf(&b, "Warning: restrict_to_workspace=true may block %d GIT_REPOS path(s) outside workspace:\n", len(outside))
@@ -213,4 +215,38 @@ func statusMarker(ok bool) string {
 		return "✓"
 	}
 	return "missing"
+}
+
+func requiredBinsForInstalledSkills(installed map[string]bool, gitReposCSV string) []string {
+	seen := make(map[string]struct{}, len(baseRequiredBins)+1)
+	out := make([]string, 0, len(baseRequiredBins)+1)
+	for _, bin := range baseRequiredBins {
+		if _, ok := seen[bin]; ok {
+			continue
+		}
+		seen[bin] = struct{}{}
+		out = append(out, bin)
+	}
+
+	if installed["git-summary"] && hasRemoteRepoRefs(gitReposCSV) {
+		if _, ok := seen["gh"]; !ok {
+			seen["gh"] = struct{}{}
+			out = append(out, "gh")
+		}
+	}
+
+	return out
+}
+
+func hasRemoteRepoRefs(gitReposCSV string) bool {
+	for _, entry := range strings.Split(gitReposCSV, ",") {
+		repo := strings.TrimSpace(entry)
+		if repo == "" {
+			continue
+		}
+		if remoteRepoRefRE.MatchString(repo) {
+			return true
+		}
+	}
+	return false
 }
