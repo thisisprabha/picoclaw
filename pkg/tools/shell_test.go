@@ -272,3 +272,24 @@ func TestShellTool_RestrictToWorkspace(t *testing.T) {
 		)
 	}
 }
+
+func TestShellTool_RewritesSingleQuotedBearerEnvHeader(t *testing.T) {
+	tool := NewExecTool("", false)
+
+	prev := os.Getenv("TEST_TOKEN")
+	_ = os.Setenv("TEST_TOKEN", "abc123")
+	defer func() {
+		_ = os.Setenv("TEST_TOKEN", prev)
+	}()
+
+	result := tool.Execute(context.Background(), map[string]any{
+		"command": "echo 'Authorization: Bearer $TEST_TOKEN'",
+	})
+
+	if result.IsError {
+		t.Fatalf("expected command to succeed, got error: %s", result.ForLLM)
+	}
+	if !strings.Contains(result.ForLLM, "Authorization: Bearer abc123") {
+		t.Fatalf("expected token expansion after quote normalization, got: %s", result.ForLLM)
+	}
+}

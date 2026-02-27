@@ -69,6 +69,8 @@ var defaultDenyPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`\bsource\s+.*\.sh\b`),
 }
 
+var bearerEnvHeaderSingleQuotePattern = regexp.MustCompile(`'Authorization:\s*Bearer\s*\$[A-Za-z_][A-Za-z0-9_]*'`)
+
 func NewExecTool(workingDir string, restrict bool) *ExecTool {
 	return NewExecToolWithConfig(workingDir, restrict, nil)
 }
@@ -139,6 +141,7 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]any) *ToolResult
 	if !ok {
 		return ErrorResult("command is required")
 	}
+	command = normalizeBearerEnvHeaderQuotes(command)
 
 	cwd := t.workingDir
 	if wd, ok := args["working_dir"].(string); ok && wd != "" {
@@ -253,6 +256,16 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]any) *ToolResult
 		ForUser: output,
 		IsError: false,
 	}
+}
+
+func normalizeBearerEnvHeaderQuotes(command string) string {
+	return bearerEnvHeaderSingleQuotePattern.ReplaceAllStringFunc(command, func(segment string) string {
+		if len(segment) < 2 {
+			return segment
+		}
+		inner := strings.TrimPrefix(strings.TrimSuffix(segment, "'"), "'")
+		return `"` + inner + `"`
+	})
 }
 
 func (t *ExecTool) guardCommand(command, cwd string) string {
