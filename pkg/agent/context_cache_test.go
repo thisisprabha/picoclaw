@@ -486,6 +486,37 @@ func TestBuildMessages_NoRequestedSkill_NoInjection(t *testing.T) {
 	}
 }
 
+func TestBuildMessages_InjectsByNaturalLanguageIntent(t *testing.T) {
+	tmpDir := setupWorkspace(t, map[string]string{
+		"skills/git-summary/SKILL.md":     "---\nname: git-summary\ndescription: test\n---\n# Git Skill",
+		"skills/email-digest/SKILL.md":    "---\nname: email-digest\ndescription: test\n---\n# Email Skill",
+		"skills/todoist-manager/SKILL.md": "---\nname: todoist-manager\ndescription: test\n---\n# Todoist Skill",
+	})
+	defer os.RemoveAll(tmpDir)
+
+	cb := NewContextBuilder(tmpDir)
+
+	cases := []struct {
+		msg   string
+		skill string
+	}{
+		{msg: "Please send my weekly git report", skill: "git-summary"},
+		{msg: "Can you share email summary for last 7 days?", skill: "email-digest"},
+		{msg: "Show my todoist tasks for today", skill: "todoist-manager"},
+	}
+
+	for _, tc := range cases {
+		msgs := cb.BuildMessages(nil, "", tc.msg, nil, "telegram", "direct")
+		if len(msgs) == 0 || msgs[0].Role != "system" {
+			t.Fatalf("expected first message to be system for case %q", tc.msg)
+		}
+		system := msgs[0].Content
+		if !strings.Contains(system, "### Skill: "+tc.skill) {
+			t.Fatalf("expected skill %q to be injected for message %q", tc.skill, tc.msg)
+		}
+	}
+}
+
 // BenchmarkBuildMessagesWithCache measures caching performance.
 
 // TestEmptyWorkspaceBaselineDetectsNewFiles verifies that when the cache is

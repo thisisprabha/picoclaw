@@ -389,12 +389,15 @@ func (cb *ContextBuilder) extractRequestedSkills(currentMessage string) []string
 
 	matches := make([]match, 0)
 	seen := map[string]bool{}
+	skillNameSet := map[string]string{}
 
-	for _, info := range cb.skillsLoader.ListSkills() {
+	skillsList := cb.skillsLoader.ListSkills()
+	for _, info := range skillsList {
 		name := strings.TrimSpace(info.Name)
 		if name == "" {
 			continue
 		}
+		skillNameSet[strings.ToLower(name)] = name
 
 		lowerName := strings.ToLower(name)
 		variants := []string{
@@ -416,6 +419,35 @@ func (cb *ContextBuilder) extractRequestedSkills(currentMessage string) []string
 		if best >= 0 && !seen[name] {
 			matches = append(matches, match{name: name, index: best})
 			seen[name] = true
+		}
+	}
+
+	// Natural-language intent mapping for common built-in skills.
+	// This helps channels like Telegram where users ask by intent
+	// ("email summary", "git report") instead of exact skill name.
+	intentAliases := map[string][]string{
+		"todoist-manager": {
+			"todoist", "today tasks", "today's tasks", "my tasks", "list tasks", "task list",
+		},
+		"email-digest": {
+			"email digest", "email summary", "mail summary", "inbox summary", "summarize emails", "last 7 days email",
+		},
+		"git-summary": {
+			"git summary", "git report", "weekly git", "git activity", "commit summary", "commits this week",
+		},
+	}
+
+	for canonical, aliases := range intentAliases {
+		actual, ok := skillNameSet[canonical]
+		if !ok || seen[actual] {
+			continue
+		}
+		for _, alias := range aliases {
+			if strings.Contains(msg, alias) {
+				matches = append(matches, match{name: actual, index: strings.Index(msg, alias)})
+				seen[actual] = true
+				break
+			}
 		}
 	}
 
