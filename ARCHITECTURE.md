@@ -100,6 +100,70 @@ make build
 ./build/picoclaw agent -s "cli:git-smoke" -m "Run git-summary skill now and return weekly summary."
 ```
 
+### Skill validation playbook (Todoist, Email, Git)
+
+Run from repo root (`~/picoclaw`) after `make build` and service restart.
+
+#### A) Todoist
+
+```bash
+source ~/.picoclaw/.env.picoclaw
+curl -s "https://api.todoist.com/api/v1/tasks?filter=today" \
+  -H "Authorization: Bearer $TODOIST_API_TOKEN" | jq '.results | length'
+
+./build/picoclaw agent -s "cli:todoist-verify" -m "Run todoist-manager skill now and return today's tasks."
+```
+
+Expected:
+- API check prints a number (`0` or more).
+- Agent returns task list, not "Unauthorized".
+
+If failing:
+- If API check fails: token/env issue.
+- If API check passes but agent fails: skill/runtime context issue. Re-sync runtime skill files and restart service.
+
+#### B) Email Digest (IMAP)
+
+```bash
+source ~/.picoclaw/.env.picoclaw
+python3 - <<'PY'
+import os, imaplib
+h=os.getenv("EMAIL_IMAP_HOST","imap.gmail.com")
+p=int(os.getenv("EMAIL_IMAP_PORT","993"))
+u=os.getenv("EMAIL_ADDRESS","")
+pw=os.getenv("EMAIL_PASSWORD","")
+m=imaplib.IMAP4_SSL(h,p); m.login(u,pw); print("IMAP OK"); m.logout()
+PY
+
+./build/picoclaw agent -s "cli:email-verify" -m "Run email-digest skill now and return the digest."
+```
+
+Expected:
+- `IMAP OK` from Python check.
+- Agent returns weekly digest summary.
+
+If failing:
+- IMAP check fails: email host/user/app-password issue.
+- IMAP check passes but agent fails: verify `~/.picoclaw/workspace/skills/email-digest/SKILL.md` still uses heredoc (`python3 - <<'PY'`).
+
+#### C) Git Summary
+
+```bash
+source ~/.picoclaw/.env.picoclaw
+echo "$GIT_REPOS"
+for r in $(echo "$GIT_REPOS" | tr ',' ' '); do [ -d "$r/.git" ] && echo "OK $r" || echo "BAD $r"; done
+
+./build/picoclaw agent -s "cli:git-verify" -m "Run git-summary skill now and return weekly summary."
+```
+
+Expected:
+- At least one repo shows `OK ...`.
+- Agent returns weekly commit summary.
+
+If failing:
+- `BAD` repos: replace `owner/repo` entries with absolute local paths.
+- Safety error (`outside working dir`): set `PICOCLAW_AGENTS_DEFAULTS_RESTRICT_TO_WORKSPACE=false` in env and restart service.
+
 ### Direct API/env checks
 
 ```bash
