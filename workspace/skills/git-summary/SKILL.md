@@ -20,11 +20,16 @@ Triggered weekly via heartbeat (Monday mornings) or manually.
 For each repo in `GIT_REPOS`:
 
 ```bash
-IFS=',' read -ra REPOS <<< "$GIT_REPOS"
-for repo in "${REPOS[@]}"; do
+if [ -z "${GIT_REPOS:-}" ]; then
+  echo "GIT_REPOS is not set. Example: export GIT_REPOS=/home/user/repo1,/home/user/repo2"
+  exit 0
+fi
+
+printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
   repo=$(echo "$repo" | xargs) # trim whitespace
+  [ -z "$repo" ] && continue
   if [ -d "$repo/.git" ]; then
-    echo "=== $(basename $repo) ==="
+    echo "=== $(basename "$repo") ==="
     cd "$repo"
     # Show last week commits from any author since this is a personal machine
     git log --since="1 week ago" --oneline 2>/dev/null || echo "(no commits found in last week)"

@@ -37,6 +37,15 @@ func gatewayCmd(debug bool) error {
 	if err != nil {
 		return fmt.Errorf("error loading config: %w", err)
 	}
+	if cfg.Agents.Defaults.RestrictToWorkspace {
+		outside := internal.FindGitReposOutsideWorkspace(cfg.WorkspacePath(), os.Getenv("GIT_REPOS"))
+		if len(outside) > 0 {
+			fmt.Printf("⚠ Warning: restrict_to_workspace=true may block %d GIT_REPOS path(s) outside workspace:\n", len(outside))
+			for _, repo := range outside {
+				fmt.Printf("  - %s\n", repo)
+			}
+		}
+	}
 
 	provider, modelID, err := providers.CreateProvider(cfg)
 	if err != nil {

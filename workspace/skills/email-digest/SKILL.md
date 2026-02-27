@@ -33,12 +33,21 @@ port = int(os.environ.get('EMAIL_IMAP_PORT', '993'))
 user = os.environ.get('EMAIL_ADDRESS', '')
 pwd = os.environ.get('EMAIL_PASSWORD', '')
 
+if not host:
+    print('EMAIL_IMAP_HOST is not set')
+    exit(0)
+
 if not user or not pwd:
-    print('EMAIL_ADDRESS or EMAIL_PASSWORD not set')
+    print('EMAIL_ADDRESS or EMAIL_PASSWORD not set (for Gmail use App Password)')
     exit(0)
 
 mail = imaplib.IMAP4_SSL(host, port)
-mail.login(user, pwd)
+try:
+    mail.login(user, pwd)
+except imaplib.IMAP4.error as e:
+    print(f'IMAP login failed: {e}. Check EMAIL_ADDRESS/EMAIL_PASSWORD (App Password for Gmail).')
+    exit(0)
+
 mail.select('inbox')
 
 since = (datetime.now() - timedelta(days=7)).strftime('%d-%b-%Y')
@@ -60,6 +69,8 @@ mail.logout()
 print('\n---\n'.join(summaries) if summaries else 'No new emails in the last 7 days.')
 "
 ```
+
+If auth fails, guide the user to regenerate an app password and update `EMAIL_PASSWORD`.
 
 ### 2. Summarize with AI
 

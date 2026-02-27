@@ -584,6 +584,19 @@ Connect Picoclaw to the Agent Social Network simply by sending a single message 
 
 Config file: `~/.picoclaw/config.json`
 
+### Environment File Loading
+
+PicoClaw auto-loads environment variables (without overwriting already exported values) from:
+
+1. `PICOCLAW_ENV_FILE` (if set)
+2. `~/.picoclaw/.env.picoclaw`
+3. `~/.picoclaw/.env`
+4. `./.env` (current working directory)
+5. `<workspace>/.env.picoclaw`
+6. `<workspace>/.env`
+
+This is useful for skills that rely on env vars like `EMAIL_*`, `TODOIST_API_TOKEN`, and `GIT_REPOS`.
+
 ### Workspace Layout
 
 PicoClaw stores data in your configured workspace (default: `~/.picoclaw/workspace`):

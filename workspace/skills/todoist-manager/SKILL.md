@@ -22,6 +22,17 @@ The user can trigger this skill with messages like:
 
 ## Operations
 
+### Token precheck
+
+Run this before any Todoist API call:
+
+```bash
+if [ -z "${TODOIST_API_TOKEN:-}" ]; then
+  echo "TODOIST_API_TOKEN is not set. Configure it in ~/.picoclaw/.env.picoclaw"
+  exit 0
+fi
+```
+
 ### List today's tasks
 
 ```bash
@@ -59,4 +70,4 @@ After each operation, confirm to the user:
 - **Create**: "✅ Task added: <content> (due: <date>)"
 - **List**: Show numbered list with priorities
 - **Complete**: "✅ Done: <content>"
-- **Error**: "❌ Could not <action>. Is TODOIST_API_TOKEN set?"
+- **Error**: "❌ Could not <action>. Check TODOIST_API_TOKEN and API response."
