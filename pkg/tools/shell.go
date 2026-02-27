@@ -289,11 +289,7 @@ func normalizeLegacyGitSummaryCommand(command string) string {
 	if !strings.Contains(lower, "git_repos") {
 		return command
 	}
-	if !strings.Contains(lower, `git log --since="1 week ago"`) {
-		return command
-	}
-	// If command already supports remote GitHub mode, keep it.
-	if strings.Contains(lower, "gh api") || strings.Contains(lower, "owner/repo") {
+	if !strings.Contains(lower, `git log --since="1 week ago"`) && !strings.Contains(lower, `repos/$repo/commits`) {
 		return command
 	}
 

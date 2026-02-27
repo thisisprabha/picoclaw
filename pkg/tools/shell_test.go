@@ -333,10 +333,10 @@ done`
 	}
 }
 
-func TestNormalizeLegacyGitSummaryCommand_LeavesModernCommand(t *testing.T) {
-	modern := `gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100"`
-	got := normalizeLegacyGitSummaryCommand(modern)
-	if got != modern {
-		t.Fatalf("expected modern command unchanged")
+func TestNormalizeLegacyGitSummaryCommand_RewritesMalformedHybridCommand(t *testing.T) {
+	modernButMalformed := `export GIT_REPOS=/tmp/a,thisisprabha/time-left; if [ -z "${GIT_REPOS:-}" ]; then echo x; fi; gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100"`
+	got := normalizeLegacyGitSummaryCommand(modernButMalformed)
+	if !strings.Contains(got, `if [ -z "${GIT_REPOS:-}" ]; then`) || !strings.Contains(got, `gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100"`) {
+		t.Fatalf("expected canonical hybrid rewrite, got: %s", got)
 	}
 }
