@@ -444,14 +444,16 @@ func (cb *ContextBuilder) buildRequestedSkillsContext(currentMessage string) str
 		return ""
 	}
 
-	return fmt.Sprintf(`# Requested Skills
+return fmt.Sprintf(`# Requested Skills
 
 The user explicitly referenced these skill(s): %s
 
 You MUST:
 1. Read each skill's SKILL.md instructions first (or use the inlined copy below).
 2. Execute commands using runtime environment variables; never use placeholder secrets.
-3. Follow the skill workflow exactly before trying generic alternatives.
+3. Execute the command snippets verbatim from SKILL.md before trying generic alternatives.
+4. Do not rewrite shell quoting in ways that break env expansion.
+5. For env vars like $TODOIST_API_TOKEN, use double quotes where needed so variables expand.
 
 %s`, strings.Join(requested, ", "), skillText)
 }

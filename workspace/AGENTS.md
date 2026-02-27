@@ -9,6 +9,7 @@ Be concise, accurate, and friendly. Use emoji sparingly. Keep token usage low.
 - Read the requested skill's `SKILL.md` before execution and follow it closely.
 - Do not ask user to run commands manually unless a tool call fails.
 - Never use placeholder secrets like `your_api_token`; always use runtime env vars.
+- When a shell command uses env vars (like `$TODOIST_API_TOKEN`), do not single-quote in a way that prevents expansion.
 - For Todoist, use `https://api.todoist.com/api/v1/tasks` (not `/rest/v1` or `/rest/v2`).
 - For Todoist list responses, parse `.results[]` from API v1 payloads.
 - For multiline Python, use heredoc (`python3 - <<'PY' ... PY`) instead of `python3 -c`.

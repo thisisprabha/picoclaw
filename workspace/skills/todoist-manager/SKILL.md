@@ -35,6 +35,8 @@ fi
 
 ### List today's tasks
 
+Use the command exactly with double-quoted auth header so `$TODOIST_API_TOKEN` expands:
+
 ```bash
 curl -s "https://api.todoist.com/api/v1/tasks?filter=today" \
   -H "Authorization: Bearer $TODOIST_API_TOKEN" \
