@@ -486,6 +486,7 @@ You MUST:
 3. Execute the command snippets verbatim from SKILL.md before trying generic alternatives.
 4. Do not rewrite shell quoting in ways that break env expansion.
 5. For env vars like $TODOIST_API_TOKEN, use double quotes where needed so variables expand.
+6. Do not assign/export/overwrite required env vars (e.g., GIT_REPOS, TODOIST_API_TOKEN, EMAIL_*) unless user explicitly requested it.
 
 %s`, strings.Join(requested, ", "), skillText)
 }

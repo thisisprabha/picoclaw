@@ -1,7 +1,7 @@
 ---
 name: git-summary
 description: Weekly git activity summary across local repositories and/or GitHub repos.
-metadata: {"nanobot":{"emoji":"📊","requires":{"bins":["git","gh","jq","python3"]}}}
+metadata: {"nanobot":{"emoji":"📊","requires":{"bins":["git","gh","jq"]}}}
 ---
 
 # Git Summary
@@ -27,15 +27,18 @@ if [ -z "${GIT_REPOS:-}" ]; then
   exit 0
 fi
 
+SINCE_ISO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+
+# IMPORTANT: do NOT export/overwrite GIT_REPOS in this command.
+# Use the runtime env value as-is.
 printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
   repo=$(echo "$repo" | xargs) # trim whitespace
   [ -z "$repo" ] && continue
 
   if [ -d "$repo/.git" ]; then
     echo "=== $(basename "$repo") ==="
-    cd "$repo"
     # Local repo mode
-    git log --since="1 week ago" --oneline 2>/dev/null || echo "(no commits found in last week)"
+    (cd "$repo" && git log --since="1 week ago" --oneline 2>/dev/null) || echo "(no commits found in last week)"
     echo ""
     continue
   fi
@@ -56,14 +59,8 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
       continue
     fi
 
-    since_iso=$(python3 - <<'PY'
-from datetime import datetime, timedelta, timezone
-print((datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ"))
-PY
-)
-
-    gh api -X GET "repos/$repo/commits?since=$since_iso&per_page=100" 2>/dev/null \
-      | jq -r 'if type=="array" then (if length==0 then "(no commits found in last week)" else .[] | "\(.sha[0:7]) \(.commit.message | split("\n")[0])" end) else "(failed to query GitHub API)" end'
+    gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100" 2>/dev/null \
+      | jq -r 'if type=="array" then (if length==0 then "(no commits found in last week)" else .[] | (.sha[0:7] + " " + .commit.message) end) else "(failed to query GitHub API)" end'
     echo ""
     continue
   fi
