@@ -30,10 +30,11 @@ if [ -z "${GIT_REPOS:-}" ]; then
   exit 0
 fi
 
-SINCE_ISO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
-[ -z "$SINCE_ISO" ] && SINCE_ISO=$(python3 - <<'PY'
+SINCE_ISO=$(python3 - <<'PY'
 from datetime import datetime, timedelta, timezone
-print((datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+d = datetime.now(timezone.utc) - timedelta(days=7)
+d = d.replace(hour=0, minute=0, second=0, microsecond=0)
+print(d.strftime("%Y-%m-%dT%H:%M:%SZ"))
 PY
 )
 
