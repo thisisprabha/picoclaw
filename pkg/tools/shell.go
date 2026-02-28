@@ -340,19 +340,32 @@ while IFS= read -r repo; do
       echo ""
       continue
     fi
-    COUNT=$(gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100" --jq 'length' 2>/dev/null || echo FAIL)
-    if [ "$COUNT" = "FAIL" ]; then
+    COUNT=$(gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100" --jq 'length' 2>/dev/null)
+    case "$COUNT" in
+      ''|*[!0-9]*)
+      echo "(failed to query GitHub API)"
+      echo ""
+      continue
+      ;;
+    esac
+    if [ "$COUNT" = "0" ]; then
+      echo "commits: 0"
+      echo "(no commits found in last week)"
+      echo ""
+      continue
+    fi
+    if [ "$COUNT" -lt 0 ]; then
       echo "(failed to query GitHub API)"
       echo ""
       continue
     fi
     echo "commits: $COUNT"
     TOTAL_COMMITS=$((TOTAL_COMMITS + COUNT))
-    if [ "$COUNT" -gt 0 ]; then
-      gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=5" 2>/dev/null \
-        | jq -r '.[] | (.sha[0:7] + " " + (.commit.message | split("\n")[0]))'
+    TOP5=$(gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=5" --jq '.[] | "\(.sha[0:7]) \(.commit.message | split("\n")[0])"' 2>/dev/null)
+    if [ -n "$TOP5" ]; then
+      printf '%s\n' "$TOP5"
     else
-      echo "(no commits found in last week)"
+      echo "(failed to query GitHub API)"
     fi
     echo ""
     continue
