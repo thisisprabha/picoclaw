@@ -306,7 +306,10 @@ fi
 
 TOTAL_COMMITS=0
 
-printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
+TMP_REPOS=$(mktemp)
+printf '%s\n' "$GIT_REPOS" | tr ',' '\n' > "$TMP_REPOS"
+
+while IFS= read -r repo; do
   repo=$(echo "$repo" | xargs)
   [ -z "$repo" ] && continue
 
@@ -356,7 +359,8 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
   fi
 
   echo "=== Skip: $repo (neither local git path nor owner/repo) ==="
-done
+done < "$TMP_REPOS"
+rm -f "$TMP_REPOS"
 echo "TOTAL_COMMITS=$TOTAL_COMMITS"`
 }
 
