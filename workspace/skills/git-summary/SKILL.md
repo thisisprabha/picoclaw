@@ -27,7 +27,8 @@ if [ -z "${GIT_REPOS:-}" ]; then
   exit 0
 fi
 
-SINCE_ISO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+SINCE_ISO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
+[ -z "$SINCE_ISO" ] && SINCE_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # IMPORTANT: do NOT export/overwrite GIT_REPOS in this command.
 # Use the runtime env value as-is.
@@ -38,7 +39,13 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
   if [ -d "$repo/.git" ]; then
     echo "=== $(basename "$repo") ==="
     # Local repo mode
-    (cd "$repo" && git log --since="1 week ago" --oneline 2>/dev/null) || echo "(no commits found in last week)"
+    COUNT=$(cd "$repo" && git rev-list --count --since="1 week ago" HEAD 2>/dev/null || echo 0)
+    echo "commits: $COUNT"
+    if [ "$COUNT" -gt 0 ]; then
+      (cd "$repo" && git log --since="1 week ago" --oneline -n 5 2>/dev/null)
+    else
+      echo "(no commits found in last week)"
+    fi
     echo ""
     continue
   fi
@@ -60,7 +67,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
     fi
 
     gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100" 2>/dev/null \
-      | jq -r 'if type=="array" then (if length==0 then "(no commits found in last week)" else .[] | (.sha[0:7] + " " + .commit.message) end) else "(failed to query GitHub API)" end'
+      | jq -r 'if type=="array" then ("commits: " + (length|tostring)), (if length==0 then "(no commits found in last week)" else .[:5][] | (.sha[0:7] + " " + (.commit.message | split("\n")[0])) end) else "(failed to query GitHub API)" end'
     echo ""
     continue
   fi
@@ -86,6 +93,11 @@ Compile into a formatted report:
 
 Total: Z commits across N repos
 ```
+
+Rules:
+- Parse every `=== <repo> ===` block from command output.
+- Do not drop repositories in summary.
+- Keep summary short: total commits + top highlights.
 
 ### 3. Send via message tool
 

@@ -1,19 +1,23 @@
 ---
 name: morning-briefing
-description: Daily morning briefing with weather, calendar events, and today's tasks.
+description: Daily productivity briefing (tasks + calendar + optional weather).
 metadata: {"nanobot":{"emoji":"🌅","requires":{"bins":["curl","jq"]}}}
 ---
 
 # Morning Briefing
 
-Compile and deliver a morning digest via Telegram. Run this between 8:00–8:30 AM IST.
+Compile and deliver a single morning productivity digest via Telegram.
+Keep it short and actionable. Do not include a news section.
 
 ## Steps
 
-### 1. Weather (wttr.in — no API key needed)
+### 1. Weather (optional, wttr.in — no API key needed)
 
 ```bash
-curl -s "wttr.in/Chennai?format=%l:+%c+%t+%h+%w"
+WEATHER_CITY="${WEATHER_CITY:-Chennai}"
+WEATHER_LINE=$(curl -m 8 -s "wttr.in/${WEATHER_CITY}?format=%l:+%c+%t+%h+%w" || true)
+[ -z "$WEATHER_LINE" ] && WEATHER_LINE="Weather unavailable"
+echo "$WEATHER_LINE"
 ```
 
 ### 2. Google Calendar (today's events)
@@ -49,7 +53,7 @@ if [ "$TOKEN" != "SKIP" ]; then
 fi
 ```
 
-If Google Calendar is not configured, skip and note "Calendar not configured."
+If Google Calendar is not configured, note "Calendar not configured."
 
 ### 3. Todoist (today's tasks)
 
@@ -59,24 +63,26 @@ curl -s "https://api.todoist.com/api/v1/tasks?filter=today" \
   | jq -r 'if type=="object" and has("results") then .results[] else .[] end | "☐ \(.content) (p\(.priority // 1))"'
 ```
 
-If `TODOIST_API_TOKEN` is not set, skip and note "Todoist not configured."
+If `TODOIST_API_TOKEN` is not set, note "Todoist not configured."
 
 ### 4. Compose & Send
 
-Combine all sections into a single message:
+Combine into one short message:
 
 ```
 🌅 Good Morning, Prabhakaran!
 
-🌤️ Weather: <weather output>
+✅ Today (Top priorities)
+<top 5 tasks from Todoist, or "No tasks for today">
 
-📅 Calendar:
-<calendar events or "No events today">
+📅 Calendar (Today)
+<events, or "No events today", or "Calendar not configured">
 
-✅ Today's Tasks:
-<todoist tasks or "No tasks for today">
-
-Have a great day! 🦐
+🌤️ Weather
+<one-line weather or "Weather unavailable">
 ```
 
-Send this via the message tool to the user's Telegram.
+Rules:
+- Productivity only. No news block.
+- Single consolidated message (not multiple small messages).
+- Keep response concise.

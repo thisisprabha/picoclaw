@@ -41,7 +41,7 @@
   },
   "heartbeat": {
     "enabled": true,
-    "interval": 30
+    "interval": 180
   },
   "gateway": {
     "host": "127.0.0.1",

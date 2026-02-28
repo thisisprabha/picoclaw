@@ -100,6 +100,24 @@ make build
 ./build/picoclaw agent -s "cli:git-smoke" -m "Run git-summary skill now and return weekly summary."
 ```
 
+### Cron and heartbeat checks
+
+```bash
+# PicoClaw internal cron jobs
+./build/picoclaw cron list
+
+# OS cron jobs for current user
+crontab -l
+
+# Heartbeat interval from config
+jq '.heartbeat' ~/.picoclaw/config.json
+```
+
+Recommended low-noise setup:
+- Keep heartbeat for critical checks only.
+- Run morning briefing via OS cron once per day (`daily-briefing.sh`).
+- Run weekly digest via OS cron once per week (`weekly-jobs.sh`).
+
 ### Skill validation playbook (Todoist, Email, Git)
 
 Run from repo root (`~/picoclaw`) after `make build` and service restart.
@@ -163,8 +181,21 @@ Expected:
 
 If failing:
 - If using local-path mode, `BAD` repos mean invalid local paths.
-- If using remote mode, run `gh auth status` and ensure repos are accessible.
+- If using remote mode, keep `GIT_REPOS` entries as `owner/repo` and run `gh auth status`.
 - Safety error (`outside working dir`): set `PICOCLAW_AGENTS_DEFAULTS_RESTRICT_TO_WORKSPACE=false` in env and restart service.
+
+### D) Morning briefing (single daily message)
+
+Use the dedicated script instead of heartbeat-triggered briefing:
+
+```bash
+chmod +x ~/.picoclaw/workspace/scripts/daily-briefing.sh
+crontab -l > /tmp/mycron || true
+grep -q "daily-briefing.sh" /tmp/mycron || echo '15 8 * * * ~/.picoclaw/workspace/scripts/daily-briefing.sh >> /tmp/picoclaw-daily.log 2>&1' >> /tmp/mycron
+crontab /tmp/mycron
+```
+
+Then remove morning-briefing trigger text from `~/.picoclaw/workspace/HEARTBEAT.md` if present.
 
 ### Direct API/env checks
 
@@ -243,12 +274,35 @@ source ~/.bashrc
 
 ### Git summary says repos are invalid
 
-`GIT_REPOS` must be local absolute paths, not `owner/repo` names.
+`GIT_REPOS` supports both:
+- Local absolute paths (`/home/yoyoboy/picoclaw`)
+- GitHub refs (`thisisprabha/time-left`)
 
 Example:
 
 ```bash
-export GIT_REPOS=/home/yoyoboy/picoclaw,/home/yoyoboy/another-local-repo
+export GIT_REPOS=/home/yoyoboy/picoclaw,thisisprabha/time-left,thisisprabha/networth
+```
+
+### Calendar setup (Google)
+
+Morning briefing uses Google Calendar only when configured.
+
+1. Create a Google Cloud service account.
+2. Enable Google Calendar API in that project.
+3. Download service-account JSON to Pi, e.g. `/home/yoyoboy/.picoclaw/google-sa.json`.
+4. Share your calendar with the service account email.
+5. Set env vars in `~/.picoclaw/.env.picoclaw`:
+
+```bash
+export GOOGLE_CALENDAR_ID=primary
+export GOOGLE_SERVICE_ACCOUNT_JSON=/home/yoyoboy/.picoclaw/google-sa.json
+```
+
+6. Restart service:
+
+```bash
+sudo systemctl restart picoclaw
 ```
 
 ### Env conflicts

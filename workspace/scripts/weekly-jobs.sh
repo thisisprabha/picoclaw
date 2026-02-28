@@ -23,10 +23,10 @@ fi
 
 # Run email digest
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Running email digest..."
-"$PICOCLAW_BIN" agent -m "Run the email-digest skill and send me a summary of this week's emails." 2>&1
+"$PICOCLAW_BIN" agent -s "cron:weekly-email:$(date +%G-W%V)" -m "Run the email-digest skill and send a short actionable summary for this week. No long narrative." 2>&1
 
 # Run git summary
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Running git summary..."
-"$PICOCLAW_BIN" agent -m "Run the git-summary skill and send me a summary of this week's git activity." 2>&1
+"$PICOCLAW_BIN" agent -s "cron:weekly-git:$(date +%G-W%V)" -m "Run the git-summary skill and send a concise weekly repo summary using all repos from GIT_REPOS." 2>&1
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Weekly jobs complete"

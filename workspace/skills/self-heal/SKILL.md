@@ -7,7 +7,7 @@ metadata: {"nanobot":{"emoji":"🩺","requires":{"bins":["free","df"]}}}
 # Self-Heal
 
 Monitor the Raspberry Pi 3 system health and take corrective actions.
-Triggered by heartbeat every 30 minutes, or manually ("system health").
+Use for on-demand checks or critical alerts. Avoid noisy routine reporting.
 
 ## Health Checks
 
@@ -70,6 +70,7 @@ Status: All systems nominal 🟢
 ```
 
 If any check is in warning/critical state, include recommended actions.
+If all checks are healthy, keep the reply to one short line.
 
 ## Auto-Healing Actions
 

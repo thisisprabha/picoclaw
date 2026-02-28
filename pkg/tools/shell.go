@@ -310,7 +310,13 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
 
   if [ -d "$repo/.git" ]; then
     echo "=== $(basename "$repo") ==="
-    (cd "$repo" && git log --since="1 week ago" --oneline 2>/dev/null) || echo "(no commits found in last week)"
+    COUNT=$(cd "$repo" && git rev-list --count --since="1 week ago" HEAD 2>/dev/null || echo 0)
+    echo "commits: $COUNT"
+    if [ "$COUNT" -gt 0 ]; then
+      (cd "$repo" && git log --since="1 week ago" --oneline -n 5 2>/dev/null)
+    else
+      echo "(no commits found in last week)"
+    fi
     echo ""
     continue
   fi
@@ -328,7 +334,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
       continue
     fi
     gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100" 2>/dev/null \
-      | jq -r 'if type=="array" then (if length==0 then "(no commits found in last week)" else .[] | (.sha[0:7] + " " + (.commit.message | split("\n")[0])) end) else "(failed to query GitHub API)" end'
+      | jq -r 'if type=="array" then ("commits: " + (length|tostring)), (if length==0 then "(no commits found in last week)" else .[:5][] | (.sha[0:7] + " " + (.commit.message | split("\n")[0])) end) else "(failed to query GitHub API)" end'
     echo ""
     continue
   fi
