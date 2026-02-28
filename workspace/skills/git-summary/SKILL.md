@@ -140,6 +140,9 @@ Rules:
 - Parse every `=== <repo> ===` block from command output.
 - Do not drop repositories in summary.
 - Keep summary short: total commits + top highlights.
+- Use `TOTAL_COMMITS=<n>` as source of truth.
+- If `TOTAL_COMMITS` is greater than `0`, you must report activity and include the active repos.
+- Only send "No git activity this week." when `TOTAL_COMMITS=0`.
 
 ### 3. Send via message tool
 
