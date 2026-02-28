@@ -308,11 +308,11 @@ func (al *AgentLoop) processMessage(ctx context.Context, msg bus.InboundMessage)
 		agent = al.registry.GetDefaultAgent()
 	}
 
-	// Use routed session key, but honor pre-set agent-scoped keys (for ProcessDirect/cron)
-	sessionKey := route.SessionKey
-	if msg.SessionKey != "" && strings.HasPrefix(msg.SessionKey, "agent:") {
-		sessionKey = msg.SessionKey
-	}
+	// Resolve final session key.
+	// For CLI, preserve caller-provided session ids (e.g. -s cli:foo) by
+	// namespacing them under the resolved agent. This avoids all CLI traffic
+	// collapsing into agent:<id>:main and reusing stale context.
+	sessionKey := resolveSessionKey(route.SessionKey, msg.SessionKey, msg.Channel, agent.ID)
 
 	logger.InfoCF("agent", "Routed message",
 		map[string]any{
@@ -330,6 +330,26 @@ func (al *AgentLoop) processMessage(ctx context.Context, msg bus.InboundMessage)
 		EnableSummary:   true,
 		SendResponse:    false,
 	})
+}
+
+func resolveSessionKey(routeSessionKey, msgSessionKey, channel, agentID string) string {
+	sessionKey := routeSessionKey
+	raw := strings.TrimSpace(msgSessionKey)
+	if raw == "" {
+		return sessionKey
+	}
+
+	// Honor pre-scoped agent session keys (used by cron/system paths).
+	if strings.HasPrefix(raw, "agent:") {
+		return raw
+	}
+
+	// Preserve explicit CLI session keys by namespacing under agent scope.
+	if strings.EqualFold(channel, "cli") {
+		return fmt.Sprintf("agent:%s:%s", routing.NormalizeAgentID(agentID), strings.ToLower(raw))
+	}
+
+	return sessionKey
 }
 
 func (al *AgentLoop) processSystemMessage(ctx context.Context, msg bus.InboundMessage) (string, error) {
