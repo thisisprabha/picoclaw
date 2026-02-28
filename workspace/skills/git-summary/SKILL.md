@@ -31,7 +31,11 @@ if [ -z "${GIT_REPOS:-}" ]; then
 fi
 
 SINCE_ISO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
-[ -z "$SINCE_ISO" ] && SINCE_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+[ -z "$SINCE_ISO" ] && SINCE_ISO=$(python3 - <<'PY'
+from datetime import datetime, timedelta, timezone
+print((datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+PY
+)
 
 # IMPORTANT: do NOT export/overwrite GIT_REPOS in this command.
 # Use the runtime env value as-is.
