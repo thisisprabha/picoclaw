@@ -35,6 +35,7 @@ SINCE_ISO=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
 
 # IMPORTANT: do NOT export/overwrite GIT_REPOS in this command.
 # Use the runtime env value as-is.
+TOTAL_COMMITS=0
 printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
   repo=$(echo "$repo" | xargs) # trim whitespace
   [ -z "$repo" ] && continue
@@ -44,6 +45,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
     # Local repo mode
     COUNT=$(cd "$repo" && git rev-list --count --since="1 week ago" HEAD 2>/dev/null || echo 0)
     echo "commits: $COUNT"
+    TOTAL_COMMITS=$((TOTAL_COMMITS + COUNT))
     if [ "$COUNT" -gt 0 ]; then
       (cd "$repo" && git log --since="1 week ago" --oneline -n 5 2>/dev/null)
     else
@@ -78,6 +80,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
     fi
 
     echo "commits: $COUNT"
+    TOTAL_COMMITS=$((TOTAL_COMMITS + COUNT))
     if [ "$COUNT" -gt 0 ]; then
       gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=5" 2>/dev/null \
         | jq -r '.[] | (.sha[0:7] + " " + (.commit.message | split("\n")[0]))'
@@ -90,6 +93,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
 
   echo "=== Skip: $repo (neither local git path nor owner/repo) ==="
 done
+echo "TOTAL_COMMITS=$TOTAL_COMMITS"
 ```
 
 ### 2. Summarize

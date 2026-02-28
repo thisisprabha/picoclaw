@@ -304,6 +304,8 @@ if [ -z "$SINCE_ISO" ]; then
   SINCE_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 fi
 
+TOTAL_COMMITS=0
+
 printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
   repo=$(echo "$repo" | xargs)
   [ -z "$repo" ] && continue
@@ -312,6 +314,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
     echo "=== $(basename "$repo") ==="
     COUNT=$(cd "$repo" && git rev-list --count --since="1 week ago" HEAD 2>/dev/null || echo 0)
     echo "commits: $COUNT"
+    TOTAL_COMMITS=$((TOTAL_COMMITS + COUNT))
     if [ "$COUNT" -gt 0 ]; then
       (cd "$repo" && git log --since="1 week ago" --oneline -n 5 2>/dev/null)
     else
@@ -341,6 +344,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
       continue
     fi
     echo "commits: $COUNT"
+    TOTAL_COMMITS=$((TOTAL_COMMITS + COUNT))
     if [ "$COUNT" -gt 0 ]; then
       gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=5" 2>/dev/null \
         | jq -r '.[] | (.sha[0:7] + " " + (.commit.message | split("\n")[0]))'
@@ -352,7 +356,8 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
   fi
 
   echo "=== Skip: $repo (neither local git path nor owner/repo) ==="
-done`
+done
+echo "TOTAL_COMMITS=$TOTAL_COMMITS"`
 }
 
 func (t *ExecTool) guardCommand(command, cwd string) string {
