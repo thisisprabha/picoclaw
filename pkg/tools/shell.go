@@ -321,8 +321,9 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
     continue
   fi
 
-  if printf '%s' "$repo" | grep -Eq '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'; then
-    echo "=== $repo ==="
+  if printf '%s' "$repo" | grep -Eq '^(https://github\.com/|git@github\.com:)?[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\.git)?$'; then
+    repo_norm=$(printf '%s' "$repo" | sed -E 's#^https://github\.com/##; s#^git@github\.com:##; s#\.git$##')
+    echo "=== $repo_norm ==="
     if ! command -v gh >/dev/null 2>&1; then
       echo "(skip: gh CLI not installed)"
       echo ""
@@ -333,7 +334,7 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
       echo ""
       continue
     fi
-    gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100" 2>/dev/null \
+    gh api -X GET "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100" 2>/dev/null \
       | jq -r 'if type=="array" then ("commits: " + (length|tostring)), (if length==0 then "(no commits found in last week)" else .[:5][] | (.sha[0:7] + " " + (.commit.message | split("\n")[0])) end) else "(failed to query GitHub API)" end'
     echo ""
     continue

@@ -25,7 +25,7 @@ var (
 		"git-summary":     {"GIT_REPOS"},
 	}
 	baseRequiredBins = []string{"git", "curl", "jq", "python3"}
-	remoteRepoRefRE  = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+	remoteRepoRefRE  = regexp.MustCompile(`^(https://github\.com/|git@github\.com:)?[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\.git)?$`)
 )
 
 func statusCmd() {

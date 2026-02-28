@@ -274,9 +274,11 @@ source ~/.bashrc
 
 ### Git summary says repos are invalid
 
-`GIT_REPOS` supports both:
+`GIT_REPOS` supports:
 - Local absolute paths (`/home/yoyoboy/picoclaw`)
 - GitHub refs (`thisisprabha/time-left`)
+- GitHub URLs (`https://github.com/thisisprabha/time-left`)
+- Git SSH refs (`git@github.com:thisisprabha/time-left.git`)
 
 Example:
 

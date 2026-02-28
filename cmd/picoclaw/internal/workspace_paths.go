@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var githubRepoRefRE = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+var githubRepoRefRE = regexp.MustCompile(`^(https://github\.com/|git@github\.com:)?[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\.git)?$`)
 
 // FindGitReposOutsideWorkspace returns repo paths from a comma-separated GIT_REPOS
 // value that resolve outside the configured workspace.

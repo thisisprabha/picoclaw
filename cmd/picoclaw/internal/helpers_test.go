@@ -195,7 +195,7 @@ func TestFindGitReposOutsideWorkspace_IgnoresGitHubRepoRefs(t *testing.T) {
 
 	got := FindGitReposOutsideWorkspace(
 		workspace,
-		"thisisprabha/time-left,"+inside+",thisisprabha/networth,"+outside,
+		"thisisprabha/time-left,https://github.com/thisisprabha/networth,git@github.com:thisisprabha/replace.git,"+inside+","+outside,
 	)
 	require.Equal(t, []string{outside}, got)
 }

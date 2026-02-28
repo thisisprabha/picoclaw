@@ -94,7 +94,7 @@ func TestBuildSkillsEnvHealthReport_GitRemoteRefsRequireGh(t *testing.T) {
 		},
 		func(key string) (string, bool) {
 			if key == "GIT_REPOS" {
-				return "thisisprabha/time-left,thisisprabha/networth", true
+				return "thisisprabha/time-left,https://github.com/thisisprabha/networth", true
 			}
 			return "", false
 		},
