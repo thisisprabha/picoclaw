@@ -334,8 +334,19 @@ printf '%s\n' "$GIT_REPOS" | tr ',' '\n' | while IFS= read -r repo; do
       echo ""
       continue
     fi
-    gh api -X GET "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100" 2>/dev/null \
-      | jq -r 'if type=="array" then ("commits: " + (length|tostring)), (if length==0 then "(no commits found in last week)" else .[:5][] | (.sha[0:7] + " " + (.commit.message | split("\n")[0])) end) else "(failed to query GitHub API)" end'
+    COUNT=$(gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100" --jq 'length' 2>/dev/null || echo FAIL)
+    if [ "$COUNT" = "FAIL" ]; then
+      echo "(failed to query GitHub API)"
+      echo ""
+      continue
+    fi
+    echo "commits: $COUNT"
+    if [ "$COUNT" -gt 0 ]; then
+      gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=5" 2>/dev/null \
+        | jq -r '.[] | (.sha[0:7] + " " + (.commit.message | split("\n")[0]))'
+    else
+      echo "(no commits found in last week)"
+    fi
     echo ""
     continue
   fi

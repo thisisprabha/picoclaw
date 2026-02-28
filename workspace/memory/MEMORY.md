@@ -12,7 +12,7 @@ Format: `### [YYYY-MM-DD] [tag] Entry` — Tags: [permanent], [preference], [tas
 
 ## Preferences
 
-### 2026-02-26 [preference] Prefers concise bullet-point updates with emoji
+### 2026-02-26 [preference] Prefers concise bullet-point updates without emoji
 ### 2026-02-26 [preference] Wants proactive reminders for pending tasks
 ### 2026-02-26 [preference] Cost-conscious — minimize API token usage
 

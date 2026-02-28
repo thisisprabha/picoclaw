@@ -329,7 +329,8 @@ done`
 
 	got := normalizeLegacyGitSummaryCommand(legacy)
 	if !strings.Contains(got, `repo_norm=$(printf '%s' "$repo"`) ||
-		!strings.Contains(got, `gh api -X GET "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100"`) {
+		!strings.Contains(got, `COUNT=$(gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100" --jq 'length'`) ||
+		!strings.Contains(got, `gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=5"`) {
 		t.Fatalf("expected rewritten hybrid git-summary command, got: %s", got)
 	}
 }
@@ -338,7 +339,8 @@ func TestNormalizeLegacyGitSummaryCommand_RewritesMalformedHybridCommand(t *test
 	modernButMalformed := `export GIT_REPOS=/tmp/a,thisisprabha/time-left; if [ -z "${GIT_REPOS:-}" ]; then echo x; fi; gh api -X GET "repos/$repo/commits?since=$SINCE_ISO&per_page=100"`
 	got := normalizeLegacyGitSummaryCommand(modernButMalformed)
 	if !strings.Contains(got, `if [ -z "${GIT_REPOS:-}" ]; then`) ||
-		!strings.Contains(got, `gh api -X GET "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100"`) {
+		!strings.Contains(got, `COUNT=$(gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=100" --jq 'length'`) ||
+		!strings.Contains(got, `gh api "repos/$repo_norm/commits?since=$SINCE_ISO&per_page=5"`) {
 		t.Fatalf("expected canonical hybrid rewrite, got: %s", got)
 	}
 }
