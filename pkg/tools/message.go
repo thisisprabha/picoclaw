@@ -3,6 +3,8 @@ package tools
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 type SendCallback func(channel, chatID, content string) error
@@ -69,7 +71,7 @@ func (t *MessageTool) Execute(ctx context.Context, args map[string]any) *ToolRes
 	}
 
 	channel, _ := args["channel"].(string)
-	chatID, _ := args["chat_id"].(string)
+	chatID := parseChatID(args["chat_id"])
 
 	if channel == "" {
 		channel = t.defaultChannel
@@ -99,5 +101,47 @@ func (t *MessageTool) Execute(ctx context.Context, args map[string]any) *ToolRes
 	return &ToolResult{
 		ForLLM: fmt.Sprintf("Message sent to %s:%s", channel, chatID),
 		Silent: true,
+	}
+}
+
+func parseChatID(v any) string {
+	switch x := v.(type) {
+	case string:
+		return strings.TrimSpace(x)
+	case int:
+		return strconv.Itoa(x)
+	case int8:
+		return strconv.FormatInt(int64(x), 10)
+	case int16:
+		return strconv.FormatInt(int64(x), 10)
+	case int32:
+		return strconv.FormatInt(int64(x), 10)
+	case int64:
+		return strconv.FormatInt(x, 10)
+	case uint:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint64:
+		return strconv.FormatUint(x, 10)
+	case float64:
+		i := int64(x)
+		if x == float64(i) {
+			return strconv.FormatInt(i, 10)
+		}
+		return strconv.FormatFloat(x, 'f', -1, 64)
+	case float32:
+		f := float64(x)
+		i := int64(f)
+		if f == float64(i) {
+			return strconv.FormatInt(i, 10)
+		}
+		return strconv.FormatFloat(f, 'f', -1, 64)
+	default:
+		return ""
 	}
 }

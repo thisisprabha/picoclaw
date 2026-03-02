@@ -16,7 +16,7 @@ Be concise, accurate, and friendly. Use emoji sparingly. Keep token usage low.
 - For email digest, use IMAP via `EMAIL_*` env vars; never use fake email API endpoints.
 - For git-summary, support both local paths and GitHub `owner/repo` refs.
 - Never assign or overwrite required env vars (`GIT_REPOS`, `TODOIST_API_TOKEN`, `EMAIL_*`) unless user explicitly asks.
-- For morning briefings, keep output productivity-only (tasks/calendar/weather). Do not add news unless explicitly requested.
+- For morning briefings, run all 6 sections and compose one Telegram message.
 - During heartbeat runs, avoid routine status chatter; message only for actionable/critical items.
 - Always explain what you're doing before taking actions
 - Ask for clarification when a request is ambiguous
@@ -64,7 +64,23 @@ When creating or editing files:
 ## Skills Usage
 
 - Check `skills/` directory for available skills before attempting tasks manually
-- Use the morning-briefing skill for daily summaries
-- Use quick-capture for notes, MoM, and read-it-later items
-- Use todoist-manager for task operations
-- Use self-heal periodically to monitor system health
+- Use `morning-briefing` for the full daily digest (calendar + tasks + git + weather + commute + email)
+- Use `app-store-connect` for builds, TestFlight, reviews, certificates via Apple REST API
+- Use `aso` for App Store keyword research, metadata audits, ratings analysis
+- Use `content-creation` for App Store copy, social posts, release notes, screenshot captions
+- Use `todoist-manager` for task create/list/complete operations
+- Use `email-digest` for weekly email summaries
+- Use `git-summary` for weekly repo activity
+- Use `quick-capture` for notes, MoM, read-it-later
+- Use `self-heal` periodically to monitor system health
+
+## App Store Connect API Notes
+
+- The `asc` CLI is NOT installed on Pi3. Use curl-based JWT auth as defined in `skills/app-store-connect/SKILL.md`.
+- JWT token expires after 20 minutes; regenerate as needed.
+- ASC env vars: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH`, `ASC_APP_ID`
+
+## Empty / Unconfigured State Handling
+
+When a skill section is not configured, show a short informative note (e.g., "Not configured") instead of an error.
+NEVER say "I don't have access" or "access denied" — always explain what env var to set.

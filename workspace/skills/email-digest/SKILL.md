@@ -77,24 +77,24 @@ PY
 
 If auth fails, guide the user to regenerate an app password and update `EMAIL_PASSWORD`.
 
-### 2. Summarize with AI
+### 2. Summarize with AI (short format)
 
-Take the raw email subjects/senders list and summarize into:
+Take the raw email list and summarize in this compact template:
 
 ```
-📧 Weekly Email Digest (last 7 days)
-
-Found X emails. Key highlights:
-• <important email 1>
-• <important email 2>
-• ...
-
-Action items:
-• <anything requiring response>
-
-Low priority (skippable):
-• <newsletters, notifications>
+📧 Email Digest (7d)
+- Total: <X>
+- Important:
+  • <sender + short subject>   # max 3 bullets
+- Action:
+  • <reply/follow-up or "None">
 ```
+
+Rules:
+- Keep it short (max 5 lines total).
+- No long paragraphs, no explanations.
+- Output only the final digest block, nothing else.
+- If no emails: `📧 Email Digest (7d) - No new emails.`
 
 ### 3. Send via message tool
 

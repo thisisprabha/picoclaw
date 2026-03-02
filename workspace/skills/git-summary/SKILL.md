@@ -119,28 +119,24 @@ rm -f "$TMP_REPOS"
 echo "TOTAL_COMMITS=$TOTAL_COMMITS"
 ```
 
-### 2. Summarize
+### 2. Summarize (short format)
 
-Compile into a formatted report:
+Compile into this compact report:
 
 ```
-📊 Weekly Git Summary
-
-## <repo-name-1>
-- X commits this week
-- Key changes: <brief summary of commit messages>
-
-## <repo-name-2>
-- Y commits this week
-- Key changes: <brief summary>
-
-Total: Z commits across N repos
+📊 Git Summary (7d)
+- Total commits: <TOTAL_COMMITS>
+- Active repos:
+  • <repo-a>: <count>
+  • <repo-b>: <count>
+- Highlight:
+  • <top change in one line>
 ```
 
 Rules:
 - Parse every `=== <repo> ===` block from command output.
 - Do not drop repositories in summary.
-- Keep summary short: total commits + top highlights.
+- Keep summary short: max 6 lines total.
 - Use `TOTAL_COMMITS=<n>` as source of truth.
 - If `TOTAL_COMMITS` is greater than `0`, you must report activity and include the active repos.
 - Only send "No git activity this week." when `TOTAL_COMMITS=0`.

@@ -94,6 +94,41 @@ func TestMessageTool_Execute_WithCustomChannel(t *testing.T) {
 	}
 }
 
+func TestMessageTool_Execute_WithNumericChatID(t *testing.T) {
+	tool := NewMessageTool()
+	tool.SetContext("default-channel", "default-chat-id")
+
+	var sentChannel, sentChatID string
+	tool.SetSendCallback(func(channel, chatID, content string) error {
+		sentChannel = channel
+		sentChatID = chatID
+		return nil
+	})
+
+	ctx := context.Background()
+	args := map[string]any{
+		"content": "Test message",
+		"channel": "telegram",
+		"chat_id": float64(5355009931),
+	}
+
+	result := tool.Execute(ctx, args)
+
+	if sentChannel != "telegram" {
+		t.Errorf("Expected channel 'telegram', got '%s'", sentChannel)
+	}
+	if sentChatID != "5355009931" {
+		t.Errorf("Expected chatID '5355009931', got '%s'", sentChatID)
+	}
+
+	if result.IsError {
+		t.Errorf("Expected success result, got error: %s", result.ForLLM)
+	}
+	if !result.Silent {
+		t.Error("Expected Silent=true")
+	}
+}
+
 func TestMessageTool_Execute_SendFailure(t *testing.T) {
 	tool := NewMessageTool()
 	tool.SetContext("test-channel", "test-chat-id")
